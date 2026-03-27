@@ -6,6 +6,12 @@ A lightweight, drop-in widget for collecting user feedback on any website. Users
 
 ---
 
+## Demo
+
+https://github.com/user-attachments/assets/73c2957d-ccc1-41b5-a202-ae53bbdb7094
+
+---
+
 ## How it works
 
 1. A floating chat button appears in the bottom-right corner of your page
