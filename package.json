@@ -1,0 +1,39 @@
+{
+  "name": "sticky-widget",
+  "version": "1.0.0",
+  "description": "Drop-in sticky widget for collecting user feedback with PostgreSQL storage",
+  "main": "dist/sticky-widget.min.js",
+  "module": "dist/sticky-widget.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/sticky-widget.esm.js",
+      "require": "./dist/sticky-widget.min.js",
+      "default": "./dist/sticky-widget.min.js"
+    },
+    "./server": "./server/router.js"
+  },
+  "files": [
+    "dist/",
+    "server/router.js",
+    "server/schema.sql"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "server": "node server/index.js",
+    "dev": "npx serve .",
+    "test": "npx playwright test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "esbuild": "^0.25.0",
+    "serve": "^14.2.6"
+  }
+}
