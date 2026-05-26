@@ -56,12 +56,10 @@ export function show(targetRect, selectedText, onSubmit, onCancel) {
     submitBtn.disabled = !textarea.value.trim();
   });
 
-  let submitted = false;
   const doSubmit = () => {
-    if (submitted) return;
+    if (submitBtn.disabled) return;
     const comment = textarea.value.trim();
     if (!comment) return;
-    submitted = true;
     submitBtn.disabled = true;
     onSubmit({ comment });
   };
@@ -267,6 +265,17 @@ export function remove() {
 
 export function isOpen() {
   return popoverEl !== null;
+}
+
+export function setSubmitting(submitting) {
+  if (!popoverEl) return;
+  const submitBtn = popoverEl.querySelector('.fbw-popover__btn--submit');
+  const ta = popoverEl.querySelector('.fbw-popover__textarea');
+  if (submitBtn) {
+    submitBtn.textContent = submitting ? 'Submitting…' : 'Submit';
+    submitBtn.disabled = submitting || !(ta && ta.value.trim());
+  }
+  if (ta) ta.disabled = !!submitting;
 }
 
 export function isConfirmOpen() {

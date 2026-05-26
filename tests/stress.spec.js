@@ -7,6 +7,12 @@ const clickFab = (page) =>
 
 test('100 submissions stored correctly', async ({ page }) => {
   test.setTimeout(120000); // 2 minutes for 100 submissions
+
+  // Stub the demo's POST endpoint so each submit succeeds without a real backend.
+  await page.route('**/api/v1/feedback', (route) =>
+    route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' })
+  );
+
   await page.goto('/demo/');
   await page.waitForFunction(() => {
     const host = document.querySelector('#fbw-root');

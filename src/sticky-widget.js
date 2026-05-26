@@ -289,30 +289,45 @@ function submitEntry(comment, selectedText) {
     };
   }
 
-  store.add(entry);
-  if (config.onSubmit) config.onSubmit(entry);
-
-  if (config.postUrl) {
-    fetch(config.postUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        showToast('Submitted. Thank you!');
-      })
-      .catch((err) => {
-        console.warn('[StickyWidget] POST failed:', err);
-        showToast('Failed to submit. Please try again.', true);
-        if (config.onError) config.onError(err, entry);
-      });
-  } else {
+  // No postUrl — synchronous "submit", keep existing in-memory + callback behaviour.
+  if (!config.postUrl) {
+    store.add(entry);
+    if (config.onSubmit) config.onSubmit(entry);
     showToast('Recorded. Thank you!');
+    popover.remove();
+    exitToIdle();
+    return;
   }
 
-  popover.remove();
-  exitToIdle();
+  // postUrl set — show submitting state, await response, only close on success.
+  popover.setSubmitting(true);
+  showToast('Submitting…');
+
+  fetch(config.postUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  })
+    .then(async (res) => {
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body || body.ok !== true) {
+        throw new Error(`Server responded with ${res.status}${body && body.error ? ': ' + body.error : ''}`);
+      }
+      // Server confirmed — only NOW commit to local store + fire callback.
+      store.add(entry);
+      if (config.onSubmit) config.onSubmit(entry);
+      showToast('Submitted. Thank you!');
+      popover.setSubmitting(false);
+      popover.remove();
+      exitToIdle();
+    })
+    .catch((err) => {
+      console.warn('[StickyWidget] POST failed:', err);
+      popover.setSubmitting(false);
+      showToast('Failed to submit. Please try again.', true);
+      if (config.onError) config.onError(err, entry);
+      // Intentionally keep popover open — user can edit and retry.
+    });
 }
 
 function showToast(message, isError = false) {

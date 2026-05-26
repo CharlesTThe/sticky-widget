@@ -18,6 +18,12 @@ const clickFab = (page) =>
   );
 
 test.beforeEach(async ({ page }) => {
+  // Default: stub the demo's POST endpoint so submits succeed without a real backend.
+  // Tests that need a different response can override with their own page.route.
+  await page.route('**/api/v1/feedback', (route) =>
+    route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' })
+  );
+
   await page.goto('/demo/');
   // Wait for widget to init (FAB exists in shadow DOM)
   await page.waitForFunction(() => {
@@ -113,11 +119,10 @@ test('Submit flow — type text and click submit', async ({ page }) => {
     document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover__btn--submit').click()
   );
 
-  // Popover should close
-  const popoverGone = await page.evaluate(() =>
+  // Popover closes only after the (stubbed) server confirms.
+  await page.waitForFunction(() =>
     !document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover')
-  );
-  expect(popoverGone).toBe(true);
+  , { timeout: 2000 });
 
   // Debug panel should have the feedback
   const debugText = await page.textContent('#debug-output');
@@ -389,6 +394,127 @@ test('User identity included in payload', async ({ page }) => {
   expect(entry.user).toBeDefined();
   expect(entry.user.name).toBe('Demo User');
   expect(entry.user.email).toBe('demo@example.com');
+});
+
+test('Popover stays open until fetch resolves; retry possible on failure', async ({ page }) => {
+  // Intercept the POST and stall it for 500ms so we can observe in-flight UI.
+  await page.route('**/api/v1/feedback', async (route) => {
+    await new Promise((r) => setTimeout(r, 500));
+    await route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' });
+  });
+
+  await page.evaluate(() => {
+    StickyWidget.destroy();
+    StickyWidget.init({ postUrl: '/api/v1/feedback' });
+  });
+  await page.waitForFunction(() =>
+    !!document.querySelector('#fbw-root')?.shadowRoot?.querySelector('.fbw-fab')
+  );
+
+  await page.evaluate(() =>
+    document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-fab').click()
+  );
+  await page.click('article h2');
+
+  await page.evaluate(() => {
+    const shadow = document.querySelector('#fbw-root').shadowRoot;
+    const ta = shadow.querySelector('.fbw-popover__textarea');
+    ta.value = 'Retry me';
+    ta.dispatchEvent(new Event('input'));
+    shadow.querySelector('.fbw-popover__btn--submit').click();
+  });
+
+  // While the fetch is in flight, popover must still be visible.
+  await page.waitForTimeout(150);
+  const popoverStillThere = await page.evaluate(() =>
+    !!document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover')
+  );
+  expect(popoverStillThere).toBe(true);
+
+  // After failure (≥500ms), popover should STILL be there (user can retry)
+  // and an error toast should have appeared.
+  await page.waitForFunction(() =>
+    !!document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-toast--error')
+  , { timeout: 2000 });
+  const popoverAfterError = await page.evaluate(() =>
+    !!document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover')
+  );
+  expect(popoverAfterError).toBe(true);
+
+  // Textarea content preserved for retry
+  const text = await page.evaluate(() => {
+    const shadow = document.querySelector('#fbw-root').shadowRoot;
+    return shadow.querySelector('.fbw-popover__textarea').value;
+  });
+  expect(text).toBe('Retry me');
+});
+
+test('Client rejects 200 OK with non-ok body as failure', async ({ page }) => {
+  await page.route('**/api/v1/feedback', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":false,"error":"misrouted"}' })
+  );
+
+  await page.evaluate(() => {
+    StickyWidget.destroy();
+    StickyWidget.init({ postUrl: '/api/v1/feedback' });
+  });
+  await page.waitForFunction(() =>
+    !!document.querySelector('#fbw-root')?.shadowRoot?.querySelector('.fbw-fab')
+  );
+
+  await page.evaluate(() =>
+    document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-fab').click()
+  );
+  await page.click('article h2');
+
+  await page.evaluate(() => {
+    const shadow = document.querySelector('#fbw-root').shadowRoot;
+    const ta = shadow.querySelector('.fbw-popover__textarea');
+    ta.value = 'Soft fail';
+    ta.dispatchEvent(new Event('input'));
+    shadow.querySelector('.fbw-popover__btn--submit').click();
+  });
+
+  await page.waitForFunction(() =>
+    !!document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-toast--error')
+  , { timeout: 2000 });
+
+  const popoverOpen = await page.evaluate(() =>
+    !!document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover')
+  );
+  expect(popoverOpen).toBe(true);
+});
+
+test('Popover closes only after a successful submit', async ({ page }) => {
+  await page.route('**/api/v1/feedback', async (route) => {
+    await route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' });
+  });
+
+  await page.evaluate(() => {
+    StickyWidget.destroy();
+    StickyWidget.init({ postUrl: '/api/v1/feedback' });
+  });
+  await page.waitForFunction(() =>
+    !!document.querySelector('#fbw-root')?.shadowRoot?.querySelector('.fbw-fab')
+  );
+
+  await page.evaluate(() =>
+    document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-fab').click()
+  );
+  await page.click('article h2');
+
+  await page.evaluate(() => {
+    const shadow = document.querySelector('#fbw-root').shadowRoot;
+    const ta = shadow.querySelector('.fbw-popover__textarea');
+    ta.value = 'OK path';
+    ta.dispatchEvent(new Event('input'));
+    shadow.querySelector('.fbw-popover__btn--submit').click();
+  });
+
+  // Wait for popover to close.
+  await page.waitForFunction(() =>
+    !document.querySelector('#fbw-root').shadowRoot.querySelector('.fbw-popover')
+  , { timeout: 2000 });
 });
 
 test('Console logs captured in payload', async ({ page }) => {
