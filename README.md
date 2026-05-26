@@ -1,5 +1,8 @@
 # sticky-widget
 
+![CI](https://github.com/CharlesTThe/sticky-widget/actions/workflows/ci.yml/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A lightweight, drop-in widget for collecting user feedback on any website. Users click a floating button, hover to highlight elements on the page, click a target, write a comment, and submit. Entries are stored in PostgreSQL via a small Express router you mount in your existing backend.
 
 **6KB gzipped. Zero runtime dependencies. Framework-agnostic. Shadow DOM isolated.**
@@ -27,29 +30,31 @@ No page reload. No third-party services required. Widget CSS is fully isolated v
 
 ## Installation
 
-### 1. Install the package
+> **Coming soon to npm.** Until then, install from source.
 
 ```bash
-npm install sticky-widget
+git clone https://github.com/CharlesTThe/sticky-widget.git
+cd sticky-widget
+npm install
+npm run build
 ```
 
-### 2. Run the database migration
+### 1. Run the database migration
 
 ```bash
-psql $DATABASE_URL -f node_modules/sticky-widget/server/schema.sql
+psql $DATABASE_URL -f server/schema.sql
 ```
 
 This creates a single `feedback` table.
 
-### 3. Mount the router in your Express app
+### 2. Mount the router in your Express app
 
 ```js
 const { Pool } = require('pg');
-const { stickyRouter } = require('sticky-widget/server');
+const { stickyRouter } = require('./path/to/sticky-widget/server/router');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// Mount under /api/v1 — or any prefix you choose
 app.use('/api/v1', stickyRouter(pool));
 ```
 
@@ -57,25 +62,39 @@ The router adds two endpoints:
 - `POST /api/v1/feedback` — receives and stores an entry
 - `GET /api/v1/feedback` — returns all entries (useful for internal dashboards)
 
-### 4. Add the widget to your frontend
+### 3. Add the widget to your frontend
 
-**Option A — CDN (recommended):**
+Copy `dist/sticky-widget.min.js` into your static assets and include it:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/sticky-widget@1.0.0/dist/sticky-widget.min.js" async onload="StickyWidget.init({ postUrl: '/api/v1/feedback' })"></script>
+<script src="/assets/sticky-widget.min.js"
+        onload="StickyWidget.init({ postUrl: '/api/v1/feedback' })"></script>
 ```
 
-**Option B — from your own bundle:**
+Or from your own bundle:
 
 ```js
-import StickyWidget from 'sticky-widget';
-
-StickyWidget.init({
-  postUrl: '/api/v1/feedback'
-});
+import StickyWidget from './path/to/sticky-widget/dist/sticky-widget.esm.js';
+StickyWidget.init({ postUrl: '/api/v1/feedback' });
 ```
 
-That's it. The widget self-installs into the page.
+---
+
+## Run the demo locally
+
+```bash
+git clone https://github.com/CharlesTThe/sticky-widget.git
+cd sticky-widget
+npm install
+npm run build
+# In one terminal — start the backend:
+DATABASE_URL=postgres://localhost/sticky_demo npm run server
+# In another terminal — serve the demo page:
+npm run dev
+# Open the URL printed by `npm run dev` and try the widget.
+```
+
+The demo POSTs to `http://localhost:3001/api/v1/feedback`. If you don't have Postgres handy, run the demo without the backend — entries are kept in memory and the toast still shows.
 
 ---
 
