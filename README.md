@@ -7,6 +7,8 @@ A lightweight, drop-in widget for collecting user feedback on any website. Users
 
 **6KB gzipped. Zero runtime dependencies. Framework-agnostic. Shadow DOM isolated.**
 
+> **See also:** [vent-widget](https://github.com/CharlesTThe/vent-widget) — companion project for the *agent* side of feedback capture (MCP server that lets AI agents log friction to your repo as markdown). sticky-widget handles user feedback; vent-widget handles agent feedback. Same mission, different actor.
+
 ---
 
 ## Demo
