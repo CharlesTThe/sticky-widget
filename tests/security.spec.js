@@ -52,6 +52,26 @@ test.describe('Backend security', () => {
     expect([400, 413]).toContain(res.status());
   });
 
+  test('Duplicate id returns 409, not silent 201', async ({ request }) => {
+    const payload = {
+      id: 'dup-test-' + Date.now(),
+      timestamp: new Date().toISOString(),
+      pageUrl: 'https://example.com',
+      target: { selector: 'div', tagName: 'div', id: null, label: null, rect: null },
+      comment: 'first',
+    };
+
+    const first = await request.post(`${API_BASE}/feedback`, { data: payload });
+    expect(first.status()).toBe(201);
+    expect((await first.json()).ok).toBe(true);
+
+    const second = await request.post(`${API_BASE}/feedback`, { data: payload });
+    expect(second.status()).toBe(409);
+    const body = await second.json();
+    expect(body.ok).toBe(false);
+    expect(body.reason).toBe('duplicate');
+  });
+
   // Rate limit test MUST run last — it burns through the entire rate limit window
   test('Rate limiting — 31st request returns 429', async ({ request }) => {
     // We've already sent ~4 requests above, send enough to hit 30

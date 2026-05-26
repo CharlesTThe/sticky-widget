@@ -46,7 +46,7 @@ function stickyRouter(pool) {
     }
 
     try {
-      await pool.query(
+      const result = await pool.query(
         `INSERT INTO feedback
            (id, timestamp, page_url, selector, tag_name, element_id, label, rect, selected_text, comment, metadata, user_name, user_email, console_logs)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
@@ -68,6 +68,9 @@ function stickyRouter(pool) {
           consoleLogs ? JSON.stringify(consoleLogs) : null,
         ]
       );
+      if (result.rowCount === 0) {
+        return res.status(409).json({ ok: false, reason: 'duplicate' });
+      }
       res.status(201).json({ ok: true });
     } catch (err) {
       console.error('[sticky-widget] Insert failed:', err.stack);
