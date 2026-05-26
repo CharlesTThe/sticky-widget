@@ -30,19 +30,14 @@ No page reload. No third-party services required. Widget CSS is fully isolated v
 
 ## Installation
 
-> **Coming soon to npm.** Until then, install from source.
-
 ```bash
-git clone https://github.com/CharlesTThe/sticky-widget.git
-cd sticky-widget
-npm install
-npm run build
+npm install sticky-widget
 ```
 
 ### 1. Run the database migration
 
 ```bash
-psql $DATABASE_URL -f server/schema.sql
+psql $DATABASE_URL -f node_modules/sticky-widget/server/schema.sql
 ```
 
 This creates a single `feedback` table.
@@ -51,7 +46,7 @@ This creates a single `feedback` table.
 
 ```js
 const { Pool } = require('pg');
-const { stickyRouter } = require('./path/to/sticky-widget/server/router');
+const { stickyRouter } = require('sticky-widget/server');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -64,17 +59,17 @@ The router adds two endpoints:
 
 ### 3. Add the widget to your frontend
 
-Copy `dist/sticky-widget.min.js` into your static assets and include it:
+**Option A — CDN (jsDelivr auto-mirrors from npm):**
 
 ```html
-<script src="/assets/sticky-widget.min.js"
+<script src="https://cdn.jsdelivr.net/npm/sticky-widget@1.0.0/dist/sticky-widget.min.js"
         onload="StickyWidget.init({ postUrl: '/api/v1/feedback' })"></script>
 ```
 
-Or from your own bundle:
+**Option B — from your own bundle:**
 
 ```js
-import StickyWidget from './path/to/sticky-widget/dist/sticky-widget.esm.js';
+import StickyWidget from 'sticky-widget';
 StickyWidget.init({ postUrl: '/api/v1/feedback' });
 ```
 
