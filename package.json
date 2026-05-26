@@ -2,6 +2,27 @@
   "name": "sticky-widget",
   "version": "1.0.0",
   "description": "Drop-in sticky widget for collecting user feedback with PostgreSQL storage",
+  "keywords": [
+    "feedback",
+    "widget",
+    "ui-feedback",
+    "user-feedback",
+    "bug-report",
+    "annotations",
+    "shadow-dom",
+    "agentic-feedback",
+    "ai-agents"
+  ],
+  "author": "Charles Theunissen",
+  "license": "MIT",
+  "homepage": "https://github.com/CharlesTThe/sticky-widget#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CharlesTThe/sticky-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CharlesTThe/sticky-widget/issues"
+  },
   "main": "dist/sticky-widget.min.js",
   "module": "dist/sticky-widget.esm.js",
   "exports": {
