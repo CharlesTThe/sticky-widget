@@ -153,6 +153,9 @@
     <!-- Debug panel -->
     <div class="debug">
       <h3>Submitted Entries (debug)</h3>
+      <p style="color:#666;font-size:13px;margin-bottom:8px;">
+        Submits are kept in-memory by default. Add <code>?backend=1</code> to the URL to POST to the local server at <code>http://localhost:3001</code>.
+      </p>
       <pre id="debug-output">No entries submitted yet.</pre>
     </div>
 
@@ -161,8 +164,9 @@
   <!-- Define initWidget before the async script to avoid race condition -->
   <script>
     function initWidget() {
+    var useBackend = new URLSearchParams(location.search).has('backend');
     StickyWidget.init({
-      postUrl: 'http://localhost:3001/api/v1/feedback',
+      postUrl: useBackend ? 'http://localhost:3001/api/v1/feedback' : undefined,
       user: {
         name: 'Demo User',
         email: 'demo@example.com',
