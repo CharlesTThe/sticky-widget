@@ -1,0 +1,17 @@
+{
+  "name": "12-bom",
+  "why": "a byte-order mark must survive",
+  "input": "test/fixtures/edge-bom.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true,
+    "preservesBOM": true
+  }
+}

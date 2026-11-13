@@ -1,0 +1,17 @@
+{
+  "name": "02-app-shell",
+  "why": "a dashboard whose window never scrolls",
+  "input": "test/fixtures/app-shell.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true,
+    "deterministic": true
+  }
+}

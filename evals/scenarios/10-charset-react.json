@@ -1,0 +1,16 @@
+{
+  "name": "10-charset-react",
+  "why": "React-style charSet with a capital S",
+  "input": "test/fixtures/edge-charset-react.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

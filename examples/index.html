@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>feedback-kit examples</title>
+<style>
+  :root { --fbw-accent: #0f766e; }
+  body { margin: 0; font: 16px/1.55 system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 20px; }
+  h1 { margin: 0 0 6px; }
+  .lede { color: #475569; margin: 0 0 28px; }
+  a.card { display: block; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; color: inherit; text-decoration: none; }
+  a.card:hover { border-color: #0f766e; }
+  a.card strong { display: block; }
+  a.card span { color: #475569; font-size: 14px; }
+  code { background: #eef2f7; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>feedback-kit examples</h1>
+  <p class="lede">Each page loads the same widget. What changes is where the comments go.</p>
+  <a class="card" href="static-server.html"><strong>Plain HTML page, server mode</strong>
+    <span>One script tag with <code>data-endpoint</code>. Comments sync to this server and everyone sees them.</span></a>
+  <a class="card" href="static-local.html"><strong>Plain HTML page, local mode</strong>
+    <span>One script tag with <code>data-mode="local"</code>. Comments stay in your browser; share them as JSON.</span></a>
+  <a class="card" href="spa/home"><strong>Single-page app, server mode</strong>
+    <span>Client-side routing with <code>history.pushState</code>. Each route keeps its own comments.</span></a>
+  <a class="card" href="deck.html"><strong>Standalone HTML deck</strong>
+    <span>The file to run <code>bin/add-feedback.mjs</code> on, for file mode: comments saved into the file.</span></a>
+</main>
+</body>
+</html>

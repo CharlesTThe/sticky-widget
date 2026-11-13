@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture: closing tags inside a textarea</title>
+</head>
+<body>
+  <h1>Paste-ready snippets</h1>
+  <p>Copy the block below into your own page.</p>
+  <!-- The document's ONLY closing-body token lives in here, as text a reviewer can read.
+       <body> and <html> end tags are optional in HTML, and plenty of generated pages omit
+       them, so this is the shape where a naive lastIndexOf aims straight at a textarea. -->
+  <textarea id="snippet" rows="8" cols="60">
+<div class="card">Example card</div>
+</body>
+</html>
+</textarea>

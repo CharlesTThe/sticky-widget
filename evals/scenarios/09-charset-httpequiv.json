@@ -1,0 +1,16 @@
+{
+  "name": "09-charset-httpequiv",
+  "why": "encoding declared only via http-equiv",
+  "input": "test/fixtures/edge-charset-httpequiv.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

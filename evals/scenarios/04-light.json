@@ -1,0 +1,16 @@
+{
+  "name": "04-light",
+  "why": "light theme with a dual-mode token flip",
+  "input": "test/fixtures/light.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

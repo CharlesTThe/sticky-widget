@@ -1,0 +1,16 @@
+{
+  "name": "18-textarea-body",
+  "why": "a closing-body token inside a textarea must not be mistaken for the injection point",
+  "input": "test/fixtures/edge-textarea-body.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "fenceOutsideRawText": true,
+    "sentinel": true,
+    "islandParses": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true,
+    "stderrContains": "no </body> or </html> found"
+  }
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acme Console</title>
+<style>
+  :root { --fbw-accent: #7c3aed; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #f5f5f7; color: #18181b; display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+  nav { background: #18181b; color: #e4e4e7; padding: 20px 12px; }
+  nav strong { display: block; margin: 0 8px 16px; }
+  nav a { display: block; color: #d4d4d8; text-decoration: none; padding: 8px 10px; border-radius: 6px; }
+  nav a.on, nav a:hover { background: #3f3f46; color: #fff; }
+  main { padding: 32px; }
+  .panel { background: #fff; border: 1px solid #e4e4e7; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  button { background: #7c3aed; color: #fff; border: 0; border-radius: 7px; padding: 9px 14px; font: inherit; cursor: pointer; }
+  label { display: block; margin: 10px 0 4px; font-weight: 600; }
+  input { padding: 8px; border: 1px solid #d4d4d8; border-radius: 6px; width: 260px; }
+</style>
+</head>
+<body>
+<nav>
+  <strong>Acme Console</strong>
+  <a href="/examples/spa/home" data-route>Home</a>
+  <a href="/examples/spa/settings" data-route>Settings</a>
+</nav>
+<main id="app"></main>
+
+<script type="module">
+  // A tiny client-side router, standing in for React Router / Vue Router / SvelteKit.
+  const views = {
+    home: () => `
+      <h1>Welcome back</h1>
+      <div class="panel"><h2>Usage this month</h2><p id="usage">12,480 API calls of 20,000.</p></div>
+      <div class="panel"><h2>Recent activity</h2><p>Three new team members joined.</p></div>`,
+    settings: () => `
+      <h1>Settings</h1>
+      <div class="panel">
+        <label for="name">Workspace name</label><input id="name" value="Acme">
+        <label for="mail">Billing email</label><input id="mail" value="billing@acme.test">
+        <p><button id="save">Save changes</button></p>
+      </div>`
+  };
+  function render() {
+    const name = location.pathname.split('/').pop() || 'home';
+    document.getElementById('app').innerHTML = (views[name] || views.home)();
+    document.querySelectorAll('[data-route]').forEach((a) => a.classList.toggle('on', a.pathname === location.pathname));
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-route]');
+    if (!a) return;
+    e.preventDefault();
+    history.pushState(null, '', a.href);
+    render();
+  });
+  addEventListener('popstate', render);
+  render();
+
+  // The whole integration, as an app with a bundler would write it:
+  //   import FeedbackKit from 'feedback-kit';
+  import FeedbackKit from '/feedback-kit.mjs';
+  FeedbackKit.init({ endpoint: '/api/feedback', user: { name: 'Demo user' } });
+</script>
+</body>
+</html>

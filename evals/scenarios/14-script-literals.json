@@ -1,0 +1,16 @@
+{
+  "name": "14-script-literals",
+  "why": "closing-body tokens inside JS strings must not be mistaken for the real one",
+  "input": "test/fixtures/edge-script-literals.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

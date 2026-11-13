@@ -1,0 +1,16 @@
+{
+  "name": "06-no-body",
+  "why": "a fragment with no body tag to anchor to",
+  "input": "test/fixtures/edge-no-body.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

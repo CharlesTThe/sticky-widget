@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixture: light and dual theme</title>
+  <style>
+    /* ------------------------------------------------------------------
+       Three-block token setup.
+
+       1. Bare :root carries the complete light palette. Every colour used
+          anywhere on the page has its first and default definition here,
+          so the page is fully painted even if neither block below applies.
+       2. The prefers-color-scheme block is guarded against an explicit
+          light choice, so a user who picked light keeps light on a dark OS.
+       3. The [data-theme="dark"] block comes last so an explicit dark
+          choice wins on a light OS.
+
+       A widget that hardcodes its own chrome for one mode will fail the
+       contrast check in the other, and will fail again when the toggle
+       flips the tokens live without a reload.
+       ------------------------------------------------------------------ */
+    :root {
+      --bg:      #f7f8fa;
+      --surface: #ffffff;
+      --ink:     #17202b;
+      --muted:   #5d6b7c;
+      --line:    #dde3ea;
+      --accent:  #1f5fbf;   /* blue, deliberately not green */
+      --accent-soft: #e8f0fc;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:      #121720;
+        --surface: #1a212c;
+        --ink:     #e8edf4;
+        --muted:   #9aa8ba;
+        --line:    #2b3543;
+        --accent:  #6ba4f0;
+        --accent-soft: #1d2b3f;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg:      #121720;
+      --surface: #1a212c;
+      --ink:     #e8edf4;
+      --muted:   #9aa8ba;
+      --line:    #2b3543;
+      --accent:  #6ba4f0;
+      --accent-soft: #1d2b3f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      /* Normal document flow: the window is the scroll container here,
+         which is the opposite of the app-shell fixture. */
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+
+    header.page {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 36px;
+    }
+
+    h1 {
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 650;
+      margin: 0 0 10px;
+    }
+
+    p { color: var(--muted); margin: 0 0 18px; }
+
+    h2 { font-size: 20px; margin: 0 0 8px; }
+
+    .theme-toggle {
+      flex: 0 0 auto;
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+      margin: 28px 0 36px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card .n {
+      font-size: 30px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+      margin: 0 0 4px;
+      color: var(--ink);
+    }
+
+    .card .l {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .callout {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 18px;
+      margin: 0 0 28px;
+    }
+
+    .callout p { margin: 0; color: var(--ink); }
+
+    footer.page {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="page">
+      <div>
+        <p class="eyebrow">Northwind Logistics</p>
+        <h1>Quarterly service note</h1>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-live="polite">
+        Switch to dark
+      </button>
+    </header>
+
+    <p>
+      Service performance held through the period without any change to the
+      committed delivery windows. The two lanes placed under review last cycle
+      both returned above threshold, so neither is carried forward.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <p class="n">92.4%</p>
+        <p class="l">On time</p>
+      </div>
+      <div class="card">
+        <p class="n">61%</p>
+        <p class="l">Trailer fill</p>
+      </div>
+      <div class="card">
+        <p class="n">34</p>
+        <p class="l">Active depots</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p>Two lanes returned above the 120k threshold and leave the review list.</p>
+    </div>
+
+    <h2>What changed</h2>
+    <p>
+      Departure frequency on the southern spokes dropped from daily to
+      alternating days at the start of the period. Fill rate moved up nine
+      points against a one-point cost to the on-time figure, which is inside
+      the tolerance the steering group set.
+    </p>
+
+    <footer class="page">
+      Figures are illustrative and drawn from a synthetic dataset.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var root = document.documentElement;
+      var button = document.getElementById('theme-toggle');
+
+      /* What the page currently resolves to, taking the OS into account
+         when no explicit choice has been stamped on <html> yet. */
+      function effectiveTheme() {
+        var explicit = root.getAttribute('data-theme');
+        if (explicit === 'dark' || explicit === 'light') { return explicit; }
+        return window.matchMedia
+          && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+      }
+
+      function syncLabel() {
+        var now = effectiveTheme();
+        button.textContent = now === 'dark' ? 'Switch to light' : 'Switch to dark';
+      }
+
+      button.addEventListener('click', function () {
+        root.setAttribute('data-theme', effectiveTheme() === 'dark' ? 'light' : 'dark');
+        syncLabel();
+      });
+
+      /* Keep the label honest if the OS flips while no explicit choice is set. */
+      if (window.matchMedia) {
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (typeof mq.addEventListener === 'function') {
+          mq.addEventListener('change', syncLabel);
+        } else if (typeof mq.addListener === 'function') {
+          mq.addListener(syncLabel);
+        }
+      }
+
+      syncLabel();
+    }());
+  </script>
+</body>
+</html>

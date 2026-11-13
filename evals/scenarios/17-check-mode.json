@@ -1,0 +1,12 @@
+{
+  "name": "17-check-mode",
+  "why": "--check reports without writing anything",
+  "input": "test/fixtures/light.html",
+  "args": [
+    "--check"
+  ],
+  "expect": {
+    "exitCode": 0,
+    "producedFile": false
+  }
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quarterly Product Update</title>
+<style>
+  :root { --fbw-accent: #0f766e; }
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f8fafc; color: #0f172a; }
+  header { background: #0f766e; color: #fff; padding: 40px 24px; }
+  header h1 { margin: 0 0 8px; font-size: 2rem; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; }
+  .card .num { font-size: 1.8rem; font-weight: 700; color: #0f766e; }
+  table { width: 100%; border-collapse: collapse; margin-top: 24px; background: #fff; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Quarterly Product Update</h1>
+  <p>Comments on this page go to the feedback server, so everyone who opens it sees them.</p>
+</header>
+<main>
+  <h2>Highlights</h2>
+  <div class="cards">
+    <div class="card"><div class="num">1,240</div><div>New sign-ups</div></div>
+    <div class="card"><div class="num">87%</div><div>Retention after 30 days</div></div>
+    <div class="card"><div class="num">4.6 / 5</div><div>Average rating</div></div>
+  </div>
+  <h2>Roadmap</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>Status</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Dark mode</td><td>In progress</td><td>Q1</td></tr>
+      <tr><td>CSV export</td><td>Planned</td><td>Q2</td></tr>
+      <tr><td>Team workspaces</td><td>Research</td><td>Q3</td></tr>
+    </tbody>
+  </table>
+</main>
+<!-- The whole integration: -->
+<script src="/feedback-kit.js" data-endpoint="/api/feedback"></script>
+</body>
+</html>

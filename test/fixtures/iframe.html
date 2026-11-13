@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixture: srcdoc iframe</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --ink: #1a222d;
+      --muted: #616f80;
+      --line: #dce2e9;
+      --accent: #2f6fd0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .wrap { max-width: 820px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.015em; }
+    h2 { font-size: 18px; margin: 0 0 8px; }
+    p  { color: var(--muted); margin: 0 0 16px; }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 22px;
+    }
+
+    .frame-shell {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+      margin-bottom: 22px;
+    }
+
+    .frame-shell header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Embedded report</h1>
+    <p>
+      Host-page content sits around a self-contained child document. The child
+      is supplied inline through srcdoc, so it needs no network request and
+      renders from file:// exactly as it would from a server.
+    </p>
+
+    <section class="panel">
+      <h2>Host panel, above the frame</h2>
+      <p>
+        An element in the parent document. A pin anchored here belongs to the
+        host tree and is positioned in host coordinates.
+      </p>
+    </section>
+
+    <!--
+      The child document below lives in a separate browsing context with its
+      own document, its own body, and its own coordinate origin. Two things
+      an injected widget has to get right:
+
+        - It must not walk into the frame to anchor a pin. Element references
+          across documents are not comparable, and the frame scrolls
+          independently of the host.
+        - It must not re-inject itself into the child. The srcdoc markup
+          contains a literal closing body tag inside an attribute value, so a
+          text-level injector scanning this file for one can easily target the
+          child's tag instead of the host's.
+
+      All inner double quotes are escaped as &quot; so the attribute value
+      terminates exactly where intended.
+    -->
+    <div class="frame-shell">
+      <header>Child document (srcdoc)</header>
+      <iframe
+        title="Embedded lane summary"
+        srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot;>
+<head>
+<meta charset=&quot;utf-8&quot;>
+<title>Lane summary</title>
+<style>
+  body {
+    margin: 0;
+    padding: 18px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #1a222d;
+    background: #ffffff;
+  }
+  h1 { font-size: 17px; margin: 0 0 10px; }
+  p { color: #616f80; margin: 0 0 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e3e8ee; }
+  th { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8190a1; }
+</style>
+</head>
+<body>
+<h1>Lane summary</h1>
+<p>This document has its own body and its own scroll origin.</p>
+<table>
+  <thead><tr><th>Lane</th><th>Volume</th><th>Fill</th></tr></thead>
+  <tbody>
+    <tr><td>LN-01</td><td>182k</td><td>64%</td></tr>
+    <tr><td>LN-03</td><td>221k</td><td>71%</td></tr>
+    <tr><td>LN-04</td><td>97k</td><td>45%</td></tr>
+    <tr><td>LN-08</td><td>118k</td><td>49%</td></tr>
+  </tbody>
+</table>
+</body>
+</html>"></iframe>
+    </div>
+
+    <section class="panel">
+      <h2>Host panel, below the frame</h2>
+      <p>
+        Content resuming in the parent document. Scrolling the host moves this
+        panel while the child's internal scroll position stays where it was.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

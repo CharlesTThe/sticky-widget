@@ -1,0 +1,16 @@
+{
+  "name": "08-comment-before-html",
+  "why": "a build comment sharing line 1 with the root tag",
+  "input": "test/fixtures/edge-comment-before-html.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

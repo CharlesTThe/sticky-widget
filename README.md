@@ -1,355 +1,213 @@
-# sticky-widget
+# feedback-kit
 
-![CI](https://github.com/CharlesTThe/sticky-widget/actions/workflows/ci.yml/badge.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Click-to-comment feedback for anything you put in front of people: a standalone HTML file, a
+static site, or a React, Vue, Svelte or Angular app. A reviewer clicks **+**, points at
+anything on the page, and types. A numbered pin stays on that spot for everyone who looks next.
 
-A lightweight, drop-in widget for collecting user feedback on any website. Users click a floating button, hover to highlight elements on the page, click a target, write a comment, and submit. Entries are stored in PostgreSQL via a small Express router you mount in your existing backend.
+One widget, three places the comments can go:
 
-**6KB gzipped. Zero runtime dependencies. Framework-agnostic. Shadow DOM isolated.**
+| Mode | Comments go… | Backend | Use it for |
+|---|---|---|---|
+| **file** | into the HTML file itself (Cmd/Ctrl+S) | none | decks, one-pagers and prototypes you email around |
+| **server** | to your Node + Postgres server, synced both ways | `npm run server`, or mount the router in your app | apps and sites, many reviewers, one place to read it all |
+| **local** | into this browser, shared as JSON | none | quick solo review, or when there is nowhere to send them |
 
-> **See also:** [vent-widget](https://github.com/CharlesTThe/vent-widget) — companion project for the *agent* side of feedback capture (MCP server that lets AI agents log friction to your repo as markdown). sticky-widget handles user feedback; vent-widget handles agent feedback. Same mission, different actor.
+It is the same runtime in all three: the picker, pins, threads, resolve, suggested text edits,
+the review list, Copy summary and JSON export/import. It lives in its own shadow root, so your
+CSS cannot break it and it cannot break your CSS, and nothing is loaded from a third party.
 
----
-
-## Demo
-
-https://github.com/user-attachments/assets/73c2957d-ccc1-41b5-a202-ae53bbdb7094
-
----
-
-## How it works
-
-1. A floating chat button appears in the bottom-right corner of your page
-2. A user clicks it to activate — the cursor becomes a crosshair
-3. They hover over any element; meaningful components are automatically highlighted
-4. They click the element they want to comment on (or select text first)
-5. A small popover appears for them to type their comment
-6. On submit, the entry is POSTed to your backend and stored in Postgres
-
-No page reload. No third-party services required. Widget CSS is fully isolated via Shadow DOM.
+This merges two earlier widgets: the file-based `feedback-widget` (robust anchoring, pins,
+threads, text rewrites, save-into-file) and `sticky-widget` (backend submission, Express +
+Postgres, user identity, console capture).
 
 ---
 
-## Installation
+## Pick your setup
+
+### A standalone HTML file → file mode
 
 ```bash
-npm install sticky-widget
+node bin/add-feedback.mjs "my-deck.html" --out "my-deck - review.html"
+node bin/verify.mjs "my-deck - review.html"      # exit 0 = done
 ```
 
-### 1. Run the database migration
+Send the output file. Reviewers open it, comment, press Cmd/Ctrl+S, and send it on; the next
+person sees everything before them. Details: [`references/cli.md`](references/cli.md),
+[`references/architecture.md`](references/architecture.md).
+
+Want those comments in one place instead of in the file? Add `--endpoint`:
 
 ```bash
-psql $DATABASE_URL -f node_modules/sticky-widget/server/schema.sql
+node bin/add-feedback.mjs my-deck.html --out review.html --endpoint https://feedback.example.com/api/feedback
 ```
 
-This creates a single `feedback` table.
+(Add `--write-key <key>` if the server runs with `WRITE_KEY`.)
 
-### 2. Mount the router in your Express app
+Every copy of that file, however it is renamed or forwarded, then shares one set of comments.
 
-```js
-const { Pool } = require('pg');
-const { stickyRouter } = require('sticky-widget/server');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-app.use('/api/v1', stickyRouter(pool));
-```
-
-The router adds two endpoints:
-- `POST /api/v1/feedback` — receives and stores an entry
-- `GET /api/v1/feedback` — returns all entries (useful for internal dashboards)
-
-### 3. Add the widget to your frontend
-
-**Option A — CDN (jsDelivr auto-mirrors from npm):**
+### Any web page → one script tag
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/sticky-widget@1.0.0/dist/sticky-widget.min.js"
-        onload="StickyWidget.init({ postUrl: '/api/v1/feedback' })"></script>
+<!-- comments to your server -->
+<script src="https://feedback.example.com/feedback-kit.js"
+        data-endpoint="https://feedback.example.com/api/feedback"></script>
+
+<!-- or: comments stay in the browser -->
+<script src="feedback-kit.js" data-mode="local"></script>
 ```
 
-**Option B — from your own bundle:**
+Other attributes: `data-page-id`, `data-accent`, `data-position="bottom-left"`,
+`data-user-name`, `data-user-email`, `data-capture-console`, `data-text-edits="false"`,
+`data-poll-interval`, `data-write-key`, `data-show-rewrites="all"`. A bare `data-feedback-kit`
+starts it with no other settings.
+
+### An app with a bundler → import it
 
 ```js
-import StickyWidget from 'sticky-widget';
-StickyWidget.init({ postUrl: '/api/v1/feedback' });
-```
+import FeedbackKit from 'feedback-kit';
 
----
-
-## Run the demo locally
-
-```bash
-git clone https://github.com/CharlesTThe/sticky-widget.git
-cd sticky-widget
-npm install
-npm run build
-# In one terminal — start the backend:
-DATABASE_URL=postgres://localhost/sticky_demo npm run server
-# In another terminal — serve the demo page:
-npm run dev
-# Open the URL printed by `npm run dev` and try the widget.
-```
-
-The demo POSTs to `http://localhost:3001/api/v1/feedback`. If you don't have Postgres handy, run the demo without the backend — entries are kept in memory and the toast still shows.
-
----
-
-## Configuration
-
-All options are passed to `StickyWidget.init()`.
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `postUrl` | `string` | `null` | URL to POST entries to. If omitted, entries are only stored in-memory. |
-| `onSubmit` | `function` | `null` | Called with the entry after submit. Useful for analytics or custom storage. |
-| `onError` | `function` | `null` | Called with `(error, entry)` when a POST fails. |
-| `onOpen` | `function` | `null` | Called when the widget is activated. |
-| `onClose` | `function` | `null` | Called when the widget is deactivated. |
-| `user` | `object` | `null` | `{ name, email }` — attached to every entry. Pass from your auth layer (e.g. Okta). |
-| `captureConsole` | `boolean` | `true` | Capture `console.error`/`warn` and unhandled errors (last 50 entries). |
-| `accentColor` | `string` | `#4f46e5` | Hex color for the FAB, highlights, and submit button. |
-| `position` | `string` | `bottom-right` | FAB position. Use `bottom-left` to move it. |
-| `zIndexBase` | `number` | `99999` | Base z-index. Increase if other elements overlap the widget. |
-
-**Example with all options:**
-
-```js
-StickyWidget.init({
-  postUrl: '/api/v1/feedback',
-  accentColor: '#0f766e',
-  position: 'bottom-right',
-  zIndexBase: 99999,
-  user: { name: 'Jane Doe', email: 'jane@example.com' },
-  captureConsole: true,
-  onSubmit: (entry) => console.log('New entry:', entry),
-  onError: (err, entry) => console.error('POST failed:', err),
-  onOpen: () => console.log('Widget activated'),
-  onClose: () => console.log('Widget deactivated'),
+FeedbackKit.init({
+  endpoint: '/api/feedback',
+  user: { name: currentUser.name, email: currentUser.email },   // skips the name prompt
 });
 ```
 
----
+Client-side routing is followed automatically (`pushState`, `replaceState`, back/forward): each
+route keeps its own comments. Safe to import during server-side rendering; it does nothing there.
 
-## JavaScript API
+### React
 
-```js
-StickyWidget.open()           // programmatically activate the widget
-StickyWidget.close()          // programmatically deactivate the widget
-StickyWidget.getEntries()     // returns array of all in-memory entries
-StickyWidget.clearEntries()   // clears in-memory store
-StickyWidget.destroy()        // removes the widget from the page entirely
+```jsx
+import { FeedbackWidget } from 'feedback-kit/react';
+
+<FeedbackWidget endpoint="/api/feedback" user={user} disabled={!user?.isStaff} />
 ```
 
----
-
-## Entry data shape
-
-Each entry stored in Postgres (and passed to `onSubmit`) looks like this:
-
-```json
-{
-  "id": "a1b2c3d4-...",
-  "timestamp": "2025-03-17T10:30:00.000Z",
-  "pageUrl": "https://yourapp.com/dashboard",
-  "target": {
-    "selector": "section#dashboard > div.card:nth-child(2)",
-    "tagName": "div",
-    "id": "revenue-card",
-    "label": "Total Revenue",
-    "rect": { "top": 120, "left": 240, "width": 280, "height": 140 }
-  },
-  "selectedText": "This number looks wrong",
-  "comment": "The revenue figure doesn't match the report from last week.",
-  "metadata": {
-    "userAgent": "Mozilla/5.0 ...",
-    "viewport": "1280x720",
-    "screenSize": "1920x1080",
-    "language": "en-US",
-    "url": "https://yourapp.com/dashboard",
-    "referrer": null,
-    "timestamp": "2025-03-17T10:30:00.000Z"
-  },
-  "user": { "name": "Jane Doe", "email": "jane@example.com" },
-  "consoleLogs": [
-    { "level": "error", "message": "TypeError: ...", "timestamp": "2025-03-17T10:29:55.000Z" }
-  ]
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `id` | UUID, unique per submission |
-| `timestamp` | ISO 8601, set client-side at moment of submission |
-| `pageUrl` | Full URL of the page |
-| `target.selector` | CSS selector path to the element — lets you programmatically find it again |
-| `target.label` | Best available human-readable label (aria-label, inner text snippet) |
-| `target.rect` | Position and size of the element at time of submission |
-| `selectedText` | The text the user highlighted before clicking, if any |
-| `comment` | The user's comment |
-| `metadata` | Browser info auto-captured at submission time |
-| `user` | User identity (only present if `user` config is set) |
-| `consoleLogs` | Recent console errors/warnings captured before submission |
+Render it once near the root. It survives StrictMode and re-renders, and changing `user` does
+not restart it. Next.js: put it in a `'use client'` component. Full example:
+[`examples/react/App.jsx`](examples/react/App.jsx). Vue, Svelte, Angular:
+[`examples/other-frameworks.md`](examples/other-frameworks.md).
 
 ---
 
-## Querying entries
-
-### From Postgres directly
-
-```sql
--- All entries for a specific page
-SELECT * FROM feedback
-WHERE page_url = 'https://yourapp.com/dashboard'
-ORDER BY created_at DESC;
-
--- Most commented-on elements
-SELECT label, selector, COUNT(*) as count
-FROM feedback
-GROUP BY label, selector
-ORDER BY count DESC
-LIMIT 20;
-
--- Entries with selected text
-SELECT * FROM feedback
-WHERE selected_text IS NOT NULL
-ORDER BY created_at DESC;
-```
-
-### Via the API
+## The server
 
 ```bash
-curl https://yourapp.com/api/v1/feedback -H 'X-API-Key: your-secret'
+npm install
+DATABASE_URL=postgres://user:pass@localhost/feedback npm run server
+# → http://localhost:3001/examples/ to try it
 ```
 
-Returns a JSON array of all entries ordered by most recent first (capped at 200 rows).
+Without `DATABASE_URL` it runs on an in-memory store (and says so), which is fine for a try-out.
+Set `CORS_ORIGIN` to the sites allowed to send feedback, `TRUST_PROXY=1` if it sits behind a
+reverse proxy (otherwise every reviewer shares one rate limit), and `ADMIN_KEY` to switch on
+`GET /api/feedback/export` for reading everything:
+
+```bash
+curl -H "X-Api-Key: $ADMIN_KEY" http://localhost:3001/api/feedback/export
+```
+
+Already have an Express app? Mount the router and use your own sign-in:
+
+```js
+import { feedbackRouter, postgresStore } from 'feedback-kit/server';
+const store = postgresStore(pool);
+await store.migrate();
+app.use('/api/feedback', feedbackRouter({ store, authorize: (req) => Boolean(req.user) }));
+```
+
+The HTTP contract, the sync model, and how to plug in another database:
+[`references/server.md`](references/server.md).
+
+**Offline is handled.** Comments are kept in the browser until the server confirms them, retried
+with backoff, and sent from whichever page the reviewer is on if they navigated away. A comment
+the server **refuses** (invalid, too large, an id that belongs to another page) is not retried
+forever: it is kept in the browser, reported once through `onError`, and the review list says
+which and why. "Not allowed" (401/403) waits for a sign-in (`setUser`) or the next sync instead
+of retrying on a timer. The review list always says whether everything is sent.
 
 ---
 
-## Opt-in element targeting
+## Options
 
-By default, the widget uses smart heuristics to find the nearest meaningful element when a user clicks. You can override this by marking elements explicitly:
+| Option | Default | |
+|---|---|---|
+| `mode` | `'auto'` | `'file'` on an injected file, `'server'` when `endpoint` is set, else `'local'` |
+| `endpoint` | — | base URL of the feedback server |
+| `pageId` | origin + path | what counts as one page; a function is re-read on every navigation. An injected file with `--endpoint` uses `doc:<docId>`; a page opened from `file:` uses its full path |
+| `user` | — | `{ name, email }`; when set, reviewers are never asked their name |
+| `headers` | — | extra request headers, or a function returning them (for tokens) |
+| `credentials` | `'same-origin'` | `fetch` credentials for server calls |
+| `writeKey` | — | the standalone server's `WRITE_KEY`, sent as `X-Feedback-Key` |
+| `showRewrites` | `'mine'` in server mode, else `'all'` | whose suggested wording is applied to the page; others' are listed as suggestions |
+| `accent` | from the page | colour of the button and pins; set `--fbw-accent` in your CSS to theme it once |
+| `position` | `'bottom-right'` | or `'bottom-left'` |
+| `captureConsole` | `false` | attach the last console errors/warnings to each comment (never in file mode) |
+| `textEdits` | `true` | let reviewers retype text-only elements as a suggestion |
+| `pollInterval` | `60` | server mode: seconds between refreshes while the tab is visible; `0` = off |
+| `saveShortcut` | `true` | server mode: Cmd/Ctrl+S means "send now"; set `false` if your app uses it |
+| `onSubmit`, `onChange`, `onError`, `onOpen`, `onClose`, `onPageChange` | — | callbacks |
 
-```html
-<div data-sticky-id="revenue-chart">
-  <!-- clicking anywhere inside always targets this element -->
-</div>
-```
+API: `init`, `destroy`, `open`, `close`, `openReview`, `save`, `sync`, `setUser`, `getComments`,
+`status`. Types: [`types/index.d.ts`](types/index.d.ts), [`types/react.d.ts`](types/react.d.ts) and
+[`types/server.d.ts`](types/server.d.ts); the script tag's `window.FeedbackKit` is typed too.
 
-This is useful for custom components where the auto-detection doesn't land on the right element.
-
----
-
-## Security
-
-The Express server supports these security features via environment variables:
-
-| Env var | Description |
-|---------|-------------|
-| `CORS_ORIGIN` | Restrict which origins can POST. Warns if not set. |
-| `API_SECRET` | Optional. When set, `GET /feedback` requires an `X-API-Key` header. |
-
-Additional protections:
-- Rate limiting: 30 requests/min per IP
-- Body size limit: 16KB
-- Input validation: field length limits enforced server-side
-- Helmet security headers
-
-The `POST` endpoint is unauthenticated by default (rate-limited instead). For public-facing apps, add auth middleware before mounting the router.
+Each comment records the element it is on (five independent locators, so pins survive
+re-renders and reordering; see architecture.md §3), the author, timestamps, any suggested
+rewrite, and outside file mode the page, URL, viewport, browser and language.
 
 ---
 
-## Using with React / SPA frameworks
+## Limits worth knowing
 
-The widget appends to `document.body` and manages its own DOM. In a single-page app, you need to manage its lifecycle correctly to avoid errors during page navigation.
-
-### Recommended: mount at the layout level
-
-Since the widget is page-agnostic, mount it in a component that persists across route changes (e.g. your app shell or layout). This avoids destroy/re-init on every navigation:
-
-```jsx
-import { useEffect, useRef } from 'react';
-import StickyWidget from 'sticky-widget';
-
-function useStickyWidget(options) {
-  const initializedRef = useRef(false);
-
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
-    StickyWidget.init(options);
-
-    return () => {
-      initializedRef.current = false;
-      StickyWidget.destroy();
-    };
-  }, []);
-}
-
-// In your app shell:
-function AppShell({ children }) {
-  useStickyWidget({
-    postUrl: '/api/v1/feedback',
-    user: { name: 'Jane', email: 'jane@example.com' },
-  });
-
-  return <div>{children}</div>;
-}
-```
-
-### If you need per-page config
-
-If different pages need different widget options, mount/destroy per page — but always import as an ES module (not via `<script>` tags, which have unreliable `onload` behavior for cached scripts in SPAs):
-
-```jsx
-import { useEffect } from 'react';
-import StickyWidget from 'sticky-widget';
-
-function FeedbackPage() {
-  useEffect(() => {
-    StickyWidget.init({ postUrl: '/api/v1/feedback' });
-    return () => StickyWidget.destroy();
-  }, []);
-
-  return <div>...</div>;
-}
-```
-
-### Important notes for SPA integration
-
-- **Always call `destroy()` before React unmounts the page.** The `useEffect` cleanup function handles this automatically.
-- **Import as an ES module**, not via dynamic `<script>` insertion. Cached scripts may not re-fire `onload` on SPA navigation.
-- **Do not call `init()` from an `onClose` callback.** This causes re-entrant initialization during teardown. If you need to re-initialize with different options, do so in a separate `useEffect` or `setTimeout`.
-- **`destroy()` is idempotent** — calling it multiple times is safe (React 18 Strict Mode double-invokes effects in development).
+- **Comments on a page that changed.** If the element a comment was on is gone, the comment is
+  listed as *orphaned* with the text it was written on, never moved onto something else. A pin
+  with a dashed amber ring was re-found by a weaker match: check it.
+- **Suggested text in React/Vue apps.** A rewrite is shown on the page, but the framework may
+  put its own text back on the next render. The suggestion is kept and the pin still finds the
+  element; the page just stops showing the new wording.
+- **Content inside an `iframe`** cannot carry pins; comment on the frame as a whole.
+- **Server mode trusts reviewers' clocks** for "newer wins". Far-future timestamps are refused.
+- **Other reviewers' suggested wording is not applied in server mode.** Anyone who can reach the
+  server could otherwise change what every visitor reads. Each reviewer sees their own
+  suggestions on the page and everyone else's in the review list (`showRewrites: 'all'` changes
+  that for a server you trust).
+- **`WRITE_KEY` is not authentication**: it sits in your page source. Use `authorize()` with your
+  own sign-in for anything public.
+- File mode's notes from the original widget still apply: see
+  [`references/troubleshooting.md`](references/troubleshooting.md).
 
 ---
 
-## FAQ
+## Development
 
-**Does it work on React / Vue / Angular apps?**
-Yes. The widget is a plain JS IIFE that manipulates the DOM directly. It doesn't know or care what framework rendered the page. Call `StickyWidget.init()` once after the page mounts.
+```bash
+npm install
+npm test          # build + size gate, 91 unit/server tests, 19 evals, 50 browser tests
+```
 
-**Can I use this without a backend at all?**
-Yes — omit `postUrl` and use `onSubmit` to handle the entry yourself (e.g. send to a third-party API, log it, store in localStorage). The widget works entirely in-memory without a server.
+| | |
+|---|---|
+| `src/widget.js` | the runtime, commented; one implementation for every mode and entry point |
+| `src/index.js`, `src/react.js` | module and React entry points (thin wrappers) |
+| `dist/` | built: `widget.min.js` (script tag + injector), `feedback-kit.mjs`, `react.mjs` |
+| `server/` | Express router, Postgres and memory stores, standalone server, `schema.sql` |
+| `bin/` | the HTML injector and validator |
+| `test/` | `browser.test.mjs` (file mode), `modes.test.mjs` (local, server, SPA, React), `server.test.mjs`, injector tests |
+| `examples/` | runnable pages, served by `npm run server` at `/examples/` |
 
-**Do I need to use Express?**
-The included server router requires Express. If you use a different framework (Fastify, Koa, Hapi), use `server/router.js` as a reference — it's about 30 lines of logic to re-implement.
+The browser suites use Playwright's Chromium if installed, else your installed Chrome or Edge.
+`npm test` runs the Postgres store on pg-mem, an in-memory emulation. To run the server
+contract and the server-mode browser tests (`test/modes.test.mjs`) against real Postgres
+(verified on PostgreSQL 18.6):
 
-**The widget highlights the wrong element — how do I fix it?**
-Add `data-sticky-id="your-label"` to the element you want targeted. This always takes priority over the auto-detection heuristics.
+```bash
+TEST_DATABASE_URL=postgres://user:pw@localhost:5432/fk_test npm run test:pg
+```
 
-**How do I hide the widget for certain users?**
-Don't call `StickyWidget.init()` for those users. Or call `StickyWidget.destroy()` after init to remove it conditionally.
+Use a database that exists only for tests: its `feedback_comments` table is dropped first.
+See `references/server.md` §5.
 
-**Can I trigger the widget programmatically?**
-Yes: `StickyWidget.open()` and `StickyWidget.close()`.
-
-**What browsers are supported?**
-Any modern browser (Chrome, Firefox, Safari, Edge). The bundle targets ES2020. IE is not supported.
-
-**How do I change the button position or color?**
-Pass `position: 'bottom-left'` and `accentColor: '#your-hex'` to `init()`.
-
-**Is the data stored securely?**
-The widget stores entries in your own Postgres database — nothing goes to a third party. You control the data entirely. Set `API_SECRET` to protect the `GET` endpoint.
+Before changing the runtime or the file format, read
+[`references/architecture.md`](references/architecture.md): it is the contract the injector, the
+validator and the evals all implement.

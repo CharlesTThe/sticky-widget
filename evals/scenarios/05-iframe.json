@@ -1,0 +1,16 @@
+{
+  "name": "05-iframe",
+  "why": "content inside an iframe srcdoc",
+  "input": "test/fixtures/iframe.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

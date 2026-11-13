@@ -1,0 +1,17 @@
+{
+  "name": "16-heal-double",
+  "why": "a double-injected file heals back to exactly one block",
+  "input": "test/fixtures/light.html",
+  "transform": "doubleInject",
+  "expect": {
+    "exitCode": 3,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

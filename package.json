@@ -1,60 +1,85 @@
 {
-  "name": "sticky-widget",
-  "version": "1.0.0",
-  "description": "Drop-in sticky widget for collecting user feedback with PostgreSQL storage",
-  "keywords": [
-    "feedback",
-    "widget",
-    "ui-feedback",
-    "user-feedback",
-    "bug-report",
-    "annotations",
-    "shadow-dom",
-    "agentic-feedback",
-    "ai-agents"
-  ],
-  "author": "Charles Theunissen",
-  "license": "MIT",
-  "homepage": "https://github.com/CharlesTThe/sticky-widget#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/CharlesTThe/sticky-widget.git"
+  "name": "feedback-kit",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Click-to-comment feedback for any web page: HTML files, React and other apps. Comments go into the file, the browser, or your own Node/Postgres server.",
+  "bin": {
+    "add-feedback": "bin/add-feedback.mjs",
+    "verify-feedback": "bin/verify.mjs",
+    "feedback-server": "server/standalone.mjs"
   },
-  "bugs": {
-    "url": "https://github.com/CharlesTThe/sticky-widget/issues"
+  "scripts": {
+    "build": "node build/build.mjs",
+    "server": "node server/standalone.mjs",
+    "eval": "node evals/run.mjs",
+    "test:unit": "node --test test/injector.test.mjs test/snapshot.test.mjs test/server.test.mjs",
+    "test:browser": "node --test test/browser.test.mjs test/modes.test.mjs",
+    "test": "node build/build.mjs && npm run test:unit && node evals/run.mjs && node test/strict-browser.mjs",
+    "test:pg": "node --test test/server.test.mjs test/modes.test.mjs"
   },
-  "main": "dist/sticky-widget.min.js",
-  "module": "dist/sticky-widget.esm.js",
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "pg-mem": "^3.0.14",
+    "playwright-core": "1.63.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.1"
+  },
+  "main": "dist/widget.min.js",
+  "module": "dist/feedback-kit.mjs",
+  "types": "types/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/sticky-widget.esm.js",
-      "require": "./dist/sticky-widget.min.js",
-      "default": "./dist/sticky-widget.min.js"
+      "types": "./types/index.d.ts",
+      "import": "./dist/feedback-kit.mjs",
+      "default": "./dist/feedback-kit.mjs"
     },
-    "./server": "./server/router.js"
+    "./react": {
+      "types": "./types/react.d.ts",
+      "import": "./dist/react.mjs"
+    },
+    "./server": {
+      "types": "./types/server.d.ts",
+      "default": "./server/index.mjs"
+    },
+    "./script": "./dist/widget.min.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist/",
-    "server/router.js",
-    "server/schema.sql"
+    "types/",
+    "server/",
+    "bin/",
+    "references/",
+    "SKILL.md",
+    "README.md"
   ],
-  "scripts": {
-    "build": "node build.js",
-    "server": "node server/index.js",
-    "dev": "npx serve .",
-    "test": "npx playwright test"
+  "peerDependencies": {
+    "react": ">=17"
   },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^8.3.1",
-    "helmet": "^8.1.0",
-    "pg": "^8.11.5"
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
-  "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "esbuild": "^0.25.0",
-    "serve": "^14.2.6"
-  }
+  "keywords": [
+    "feedback",
+    "annotations",
+    "review",
+    "comments",
+    "widget",
+    "react",
+    "html",
+    "shadow-dom"
+  ]
 }

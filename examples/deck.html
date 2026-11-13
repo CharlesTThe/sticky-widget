@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Northwind Logistics — Network Density Review</title>
+  <style>
+    /* ------------------------------------------------------------------
+       Palette. Deep-green dark canvas, single bright-green accent.
+       Every colour in the deck resolves through one of these six tokens.
+       ------------------------------------------------------------------ */
+    :root {
+      --c-canvas: #06120e;
+      --c-card:   #0e2019;
+      --c-green:  #3ce08c;
+      --c-text:   #e9f3ee;
+      --c-sub:    #8ba79a;
+      --c-rule:   #1e3b30;
+
+      /* Authoring coordinate system. Every slide is drawn against this
+         fixed canvas and then scaled to fit, so type and spacing keep
+         their proportions at any viewport size. */
+      --canvas-w: 1280px;
+      --canvas-h: 640px;
+    }
+
+    /* Smooth + mandatory snap: the page scrolls one whole slide at a time,
+       and programmatic scrolling is animated rather than instant. */
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y mandatory;
+      background: var(--c-canvas);
+    }
+
+    body {
+      margin: 0;
+      background: var(--c-canvas);
+      color: var(--c-text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fixed full-viewport glow sitting underneath all slide content. */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(900px 620px at 18% 12%, rgba(60, 224, 140, 0.10), transparent 62%),
+        radial-gradient(760px 540px at 86% 84%, rgba(60, 224, 140, 0.06), transparent 66%);
+    }
+
+    /* Each slide owns a stacking context (z-index:1) and clips its own
+       content (overflow:hidden). Both are load-bearing for the layout:
+       the scaled stage can overhang its slide box mid-transition, and the
+       clip keeps that overhang from bleeding into the neighbouring slide. */
+    .slide {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      overflow: hidden;
+      scroll-snap-align: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      box-sizing: border-box;
+    }
+
+    /* The stage is authored at exactly --canvas-w x --canvas-h and then
+       scaled by --fit, which the fit engine below writes as an inline
+       custom property. flex:0 0 auto stops the flex parent from resizing
+       the untransformed box. */
+    .stage {
+      position: relative;
+      width: var(--canvas-w);
+      height: var(--canvas-h);
+      flex: 0 0 auto;
+      transform: scale(var(--fit, 1));
+      transform-origin: center center;
+    }
+
+    /* ---------------------------- type ---------------------------- */
+    .eyebrow {
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--c-green);
+      font-weight: 600;
+      margin: 0 0 20px;
+    }
+
+    h1 {
+      font-size: 68px;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin: 0 0 22px;
+      font-weight: 650;
+    }
+
+    h2 {
+      font-size: 40px;
+      line-height: 1.12;
+      letter-spacing: -0.015em;
+      margin: 0 0 10px;
+      font-weight: 620;
+    }
+
+    h3 {
+      font-size: 21px;
+      line-height: 1.25;
+      margin: 0 0 10px;
+      font-weight: 620;
+    }
+
+    p {
+      margin: 0 0 16px;
+      font-size: 17px;
+      line-height: 1.62;
+      color: var(--c-sub);
+    }
+
+    .lede {
+      font-size: 21px;
+      line-height: 1.55;
+      color: var(--c-sub);
+      max-width: 720px;
+    }
+
+    .rule {
+      height: 1px;
+      background: var(--c-rule);
+      border: 0;
+      margin: 0;
+    }
+
+    .accent-bar {
+      width: 72px;
+      height: 4px;
+      background: var(--c-green);
+      border-radius: 2px;
+      margin-bottom: 28px;
+    }
+
+    .slide-no {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      font-size: 13px;
+      color: var(--c-sub);
+      letter-spacing: 0.08em;
+    }
+
+    .stage-head {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .kicker {
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--c-sub);
+      margin: 0 0 30px;
+    }
+
+    /* ---------------------------- slide 1 ---------------------------- */
+    .title-wrap {
+      position: absolute;
+      left: 0;
+      top: 168px;
+      width: 900px;
+    }
+
+    .title-meta {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      gap: 48px;
+      align-items: baseline;
+    }
+
+    .title-meta span {
+      font-size: 14px;
+      color: var(--c-sub);
+      letter-spacing: 0.05em;
+    }
+
+    .title-meta strong {
+      color: var(--c-text);
+      font-weight: 600;
+    }
+
+    /* ---------------------------- slide 2 ---------------------------- */
+    .kpi-row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 186px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+    }
+
+    .kpi {
+      background: var(--c-card);
+      border: 1px solid var(--c-rule);
+      border-radius: 14px;
+      padding: 28px 26px 26px;
+      height: 226px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi .label {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--c-sub);
+      margin: 0 0 auto;
+    }
+
+    .kpi .value {
+      font-size: 52px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin: 0 0 10px;
+    }
+
+    .kpi .value em {
+      font-style: normal;
+      font-size: 24px;
+      color: var(--c-sub);
+      margin-left: 4px;
+    }
+
+    .kpi .delta {
+      font-size: 14px;
+      color: var(--c-green);
+      font-weight: 560;
+      margin: 0;
+    }
+
+    .kpi .delta.flat { color: var(--c-sub); }
+
+    .footnote {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      font-size: 13px;
+      color: var(--c-sub);
+      margin: 0;
+      max-width: 860px;
+    }
+
+    /* ---------------------------- slide 3 ---------------------------- */
+    .two-col {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 168px;
+      bottom: 34px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+    }
+
+    .col-left p:last-child { margin-bottom: 0; }
+
+    .col-right {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* Two structurally identical siblings: same tag, same classes, same
+       internal shape, different text only. */
+    .opt-card {
+      background: var(--c-card);
+      border: 1px solid var(--c-rule);
+      border-left: 3px solid var(--c-green);
+      border-radius: 12px;
+      padding: 24px 26px;
+      flex: 1 1 0;
+    }
+
+    .opt-card .tag {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--c-green);
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+
+    .opt-card p {
+      font-size: 16px;
+      margin: 0 0 14px;
+    }
+
+    .opt-card .stat {
+      font-size: 14px;
+      color: var(--c-text);
+      margin: 0;
+      font-weight: 560;
+    }
+
+    .col-left ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .col-left li {
+      position: relative;
+      padding-left: 22px;
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--c-sub);
+      margin-bottom: 13px;
+    }
+
+    .col-left li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--c-green);
+    }
+
+    /* ---------------------------- slide 4 ---------------------------- */
+    .chart-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 156px;
+      bottom: 34px;
+    }
+
+    .chart-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .bar { fill: var(--c-green); }
+    .bar-muted { fill: var(--c-rule); }
+    .axis { stroke: var(--c-rule); stroke-width: 1; }
+    .val-label {
+      fill: var(--c-text);
+      font-size: 15px;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+    .cat-label {
+      fill: var(--c-sub);
+      font-size: 14px;
+      text-anchor: middle;
+    }
+    .axis-label {
+      fill: var(--c-sub);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ---------------------------- slide 5 ---------------------------- */
+    .close-wrap {
+      position: absolute;
+      left: 0;
+      top: 150px;
+      width: 860px;
+    }
+
+    .steps {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      padding-top: 26px;
+      border-top: 1px solid var(--c-rule);
+    }
+
+    .step .n {
+      font-size: 13px;
+      color: var(--c-green);
+      font-weight: 650;
+      letter-spacing: 0.1em;
+      margin: 0 0 8px;
+    }
+
+    .step p {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    /* ---------------------------- dot nav ----------------------------
+       Fixed to the right gutter, vertically centred. Sits above the
+       slides so it stays reachable while the deck scrolls underneath. */
+    .dotnav {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .dotnav a {
+      display: block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1.5px solid var(--c-rule);
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .dotnav a:hover { border-color: var(--c-sub); }
+
+    .dotnav a.is-active {
+      background: var(--c-green);
+      border-color: var(--c-green);
+      transform: scale(1.25);
+    }
+
+    /* ------------------------- small screens -------------------------
+       Below this breakpoint the fixed canvas is abandoned entirely: the
+       stage drops its transform and becomes a normal fluid block, so the
+       page reflows instead of shrinking to an unreadable scale. */
+    @media (max-width: 900px) {
+      .stage {
+        transform: none !important;
+        width: 100%;
+        height: auto;
+      }
+
+      .slide {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+        padding: 56px 22px;
+        align-items: flex-start;
+      }
+
+      .title-wrap,
+      .kpi-row,
+      .two-col,
+      .chart-wrap,
+      .close-wrap,
+      .steps,
+      .title-meta,
+      .footnote,
+      .slide-no,
+      .stage-head {
+        position: static;
+        width: auto;
+      }
+
+      .kpi-row,
+      .two-col,
+      .steps {
+        grid-template-columns: 1fr;
+        display: grid;
+        margin-top: 28px;
+      }
+
+      .chart-wrap { margin-top: 28px; }
+      .chart-wrap svg { height: auto; }
+      h1 { font-size: 40px; }
+      h2 { font-size: 28px; }
+      .dotnav { display: none; }
+    }
+
+    /* ---------------------------- print ---------------------------- */
+    @media print {
+      html {
+        scroll-snap-type: none;
+        scroll-behavior: auto;
+        background: #fff;
+      }
+
+      body {
+        background: #fff;
+        color: #101010;
+      }
+
+      .bg-glow,
+      .dotnav { display: none !important; }
+
+      .slide {
+        height: auto;
+        overflow: visible;
+        page-break-after: always;
+        break-after: page;
+        padding: 0 0 36px;
+      }
+
+      .stage {
+        transform: none !important;
+        width: 100%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <nav class="dotnav" aria-label="Slide navigation">
+    <a href="#s1" data-dot="s1" aria-label="Slide 1"></a>
+    <a href="#s2" data-dot="s2" aria-label="Slide 2"></a>
+    <a href="#s3" data-dot="s3" aria-label="Slide 3"></a>
+    <a href="#s4" data-dot="s4" aria-label="Slide 4"></a>
+    <a href="#s5" data-dot="s5" aria-label="Slide 5"></a>
+  </nav>
+
+  <!-- ============================ SLIDE 1 ============================ -->
+  <section class="slide" id="s1">
+    <div class="stage">
+      <div class="stage-head">
+        <p class="eyebrow">Northwind Logistics</p>
+        <hr class="rule">
+      </div>
+
+      <div class="title-wrap">
+        <div class="accent-bar"></div>
+        <h1>Network Density Review</h1>
+        <p class="lede">
+          Where the middle-mile network is carrying cost it does not need to,
+          and what changes when we stop treating every depot as a peer.
+        </p>
+      </div>
+
+      <div class="title-meta">
+        <span>Prepared for <strong>Operations Steering Group</strong></span>
+        <span>Cycle <strong>FY29 Q2</strong></span>
+        <span>Draft <strong>v4</strong></span>
+      </div>
+
+      <div class="slide-no">01 / 05</div>
+    </div>
+  </section>
+
+  <!-- ============================ SLIDE 2 ============================ -->
+  <section class="slide" id="s2">
+    <div class="stage">
+      <div class="stage-head">
+        <p class="kicker">Where we are</p>
+        <h2>The network is bigger than the volume it moves</h2>
+        <p class="lede">Baseline measured across the eight-week observation window.</p>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi">
+          <p class="label">Active middle-mile sites</p>
+          <p class="value">34<em>depots</em></p>
+          <p class="delta flat">Unchanged since FY27</p>
+        </div>
+        <div class="kpi">
+          <p class="label">Average trailer utilisation</p>
+          <p class="value">61<em>%</em></p>
+          <p class="delta">+4 pts vs. last cycle</p>
+        </div>
+        <div class="kpi">
+          <p class="label">Cost per drop</p>
+          <p class="value">4.28<em>eur</em></p>
+          <p class="delta">−7% vs. last cycle</p>
+        </div>
+        <div class="kpi">
+          <p class="label">On-time to committed window</p>
+          <p class="value">92.4<em>%</em></p>
+          <p class="delta">+1.1 pts vs. last cycle</p>
+        </div>
+      </div>
+
+      <p class="footnote">
+        Utilisation is measured on departure, not on the booked plan. Eleven of
+        the thirty-four sites sit below half a trailer on an average weekday.
+      </p>
+
+      <div class="slide-no">02 / 05</div>
+    </div>
+  </section>
+
+  <!-- ============================ SLIDE 3 ============================ -->
+  <section class="slide" id="s3">
+    <div class="stage">
+      <div class="stage-head">
+        <p class="kicker">The choice</p>
+        <h2>Two ways to buy back the same density</h2>
+      </div>
+
+      <div class="two-col">
+        <div class="col-left">
+          <p>
+            Both routes recover roughly the same trailer fill. They differ in
+            what they cost to reverse. Consolidation is a property decision and
+            a slow one; densification is a planning decision we can unwind
+            inside a quarter.
+          </p>
+          <ul>
+            <li>Eleven sub-scale sites account for 9% of volume and 21% of fixed network cost.</li>
+            <li>Meridian Foods is the anchor customer on four of those eleven lanes.</li>
+            <li>Neither option changes the committed delivery window for any customer.</li>
+            <li>Both assume the Rotterdam sortation upgrade lands on schedule.</li>
+          </ul>
+        </div>
+
+        <!-- Two structurally identical sibling cards: same tag, same class
+             list, same internal element sequence. Only the text differs. -->
+        <div class="col-right">
+          <div class="opt-card">
+            <p class="tag">Option A</p>
+            <h3>Hub consolidation</h3>
+            <p>Close the eleven sub-scale sites and re-point their volume onto the six regional hubs.</p>
+            <p class="stat">4.1m eur annual run-rate &middot; 18 months to unwind</p>
+          </div>
+          <div class="opt-card">
+            <p class="tag">Option B</p>
+            <h3>Spoke densification</h3>
+            <p>Keep the footprint, halve the departure frequency, and hold volume back for fuller trailers.</p>
+            <p class="stat">3.6m eur annual run-rate &middot; 1 quarter to unwind</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-no">03 / 05</div>
+    </div>
+  </section>
+
+  <!-- ============================ SLIDE 4 ============================ -->
+  <section class="slide" id="s4">
+    <div class="stage">
+      <div class="stage-head">
+        <p class="kicker">Evidence</p>
+        <h2>Consolidated volume by lane</h2>
+      </div>
+
+      <div class="chart-wrap">
+        <svg viewBox="0 0 1280 420" role="img" aria-label="Bar chart of weekly consolidated volume by lane, in thousands of cases">
+          <text class="axis-label" x="0" y="20">THOUSAND CASES PER WEEK</text>
+
+          <!-- baseline -->
+          <line class="axis" x1="70" y1="310.5" x2="1210" y2="310.5"></line>
+
+          <!-- LN-01 -->
+          <rect class="bar" x="96" y="120" width="74" height="190" rx="3"></rect>
+          <text class="val-label" x="133" y="108">182</text>
+          <text class="cat-label" x="133" y="334">LN-01</text>
+
+          <!-- LN-02 -->
+          <rect class="bar" x="216" y="158" width="74" height="152" rx="3"></rect>
+          <text class="val-label" x="253" y="146">146</text>
+          <text class="cat-label" x="253" y="334">LN-02</text>
+
+          <!-- LN-03 -->
+          <rect class="bar" x="336" y="80" width="74" height="230" rx="3"></rect>
+          <text class="val-label" x="373" y="68">221</text>
+          <text class="cat-label" x="373" y="334">LN-03</text>
+
+          <!-- LN-04 : sub-scale, drawn muted -->
+          <rect class="bar-muted" x="456" y="209" width="74" height="101" rx="3"></rect>
+          <text class="val-label" x="493" y="197">97</text>
+          <text class="cat-label" x="493" y="334">LN-04</text>
+
+          <!-- LN-05 -->
+          <rect class="bar" x="576" y="135" width="74" height="175" rx="3"></rect>
+          <text class="val-label" x="613" y="123">168</text>
+          <text class="cat-label" x="613" y="334">LN-05</text>
+
+          <!-- LN-06 -->
+          <rect class="bar" x="696" y="170" width="74" height="140" rx="3"></rect>
+          <text class="val-label" x="733" y="158">134</text>
+          <text class="cat-label" x="733" y="334">LN-06</text>
+
+          <!-- LN-07 -->
+          <rect class="bar" x="816" y="96" width="74" height="214" rx="3"></rect>
+          <text class="val-label" x="853" y="84">205</text>
+          <text class="cat-label" x="853" y="334">LN-07</text>
+
+          <!-- LN-08 : sub-scale, drawn muted -->
+          <rect class="bar-muted" x="936" y="187" width="74" height="123" rx="3"></rect>
+          <text class="val-label" x="973" y="175">118</text>
+          <text class="cat-label" x="973" y="334">LN-08</text>
+
+          <text class="axis-label" x="0" y="392">MUTED BARS SIT BELOW THE 120K CONSOLIDATION THRESHOLD</text>
+        </svg>
+      </div>
+
+      <div class="slide-no">04 / 05</div>
+    </div>
+  </section>
+
+  <!-- ============================ SLIDE 5 ============================ -->
+  <section class="slide" id="s5">
+    <div class="stage">
+      <div class="stage-head">
+        <p class="eyebrow">Recommendation</p>
+        <hr class="rule">
+      </div>
+
+      <div class="close-wrap">
+        <div class="accent-bar"></div>
+        <h1>Densify first, then decide</h1>
+        <p class="lede">
+          Option B recovers most of the value and keeps the property decision
+          open. Run it for two quarters on the eight lanes below threshold, and
+          let the measured fill rate settle the consolidation question rather
+          than the forecast.
+        </p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <p class="n">01</p>
+          <p>Freeze the departure schedule on LN-04 and LN-08 from the start of next period.</p>
+        </div>
+        <div class="step">
+          <p class="n">02</p>
+          <p>Instrument fill rate on departure at all thirty-four sites, weekly.</p>
+        </div>
+        <div class="step">
+          <p class="n">03</p>
+          <p>Bring the consolidation case back to this group once two quarters of data land.</p>
+        </div>
+      </div>
+
+      <div class="slide-no">05 / 05</div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var CANVAS_W = 1280;
+      var CANVAS_H = 640;
+      var MOBILE_BREAKPOINT = 900;
+
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+
+      /* ----------------------------------------------------------------
+         Fit engine.
+
+         Each stage is authored at a fixed 1280x640 canvas and scaled down
+         to whatever space its slide actually gives it. The scale factor is
+         written as an inline --fit custom property so the CSS keeps full
+         control of how (and whether) it is applied: below the mobile
+         breakpoint the stylesheet overrides transform to none and the
+         value we wrote here is simply ignored.
+         ---------------------------------------------------------------- */
+      function fitSlide(slide) {
+        var stage = slide.querySelector('.stage');
+        if (!stage) { return; }
+
+        var cs = window.getComputedStyle(slide);
+        var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        var padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+
+        var availW = slide.clientWidth - padX;
+        var availH = slide.clientHeight - padY;
+
+        if (!(availW > 0) || !(availH > 0)) { return; }
+
+        var fit = Math.min(availW / CANVAS_W, availH / CANVAS_H);
+        stage.style.setProperty('--fit', fit.toFixed(4));
+      }
+
+      function fitAll() {
+        for (var i = 0; i < slides.length; i++) {
+          fitSlide(slides[i]);
+        }
+      }
+
+      fitAll();
+
+      window.addEventListener('resize', fitAll);
+      window.addEventListener('orientationchange', fitAll);
+
+      /* Metrics can shift once the system font stack finally resolves. */
+      if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+        document.fonts.ready.then(fitAll).catch(function () { /* nothing to recover */ });
+      }
+
+      /* The observer watches each .slide, never the .stage.
+
+         This is deliberate. The stage is the element whose transform we
+         write, and a transform changes an element's observed border-box
+         under the default 'content-box'/'border-box' observation. If we
+         observed the stage we would be measuring the very box our own
+         write resizes, and every recompute would schedule another one.
+         The slide is sized purely by the viewport and the document flow,
+         so nothing the fit engine does can feed back into it. */
+      if (typeof window.ResizeObserver === 'function') {
+        var ro = new window.ResizeObserver(function (entries) {
+          for (var i = 0; i < entries.length; i++) {
+            fitSlide(entries[i].target);
+          }
+        });
+        for (var s = 0; s < slides.length; s++) {
+          ro.observe(slides[s]);
+        }
+      }
+
+      /* ----------------------------------------------------------------
+         Dot nav. The active dot follows whichever slide currently owns
+         the majority of the viewport.
+         ---------------------------------------------------------------- */
+      var dots = {};
+      var dotEls = document.querySelectorAll('.dotnav a[data-dot]');
+      for (var d = 0; d < dotEls.length; d++) {
+        dots[dotEls[d].getAttribute('data-dot')] = dotEls[d];
+      }
+
+      function activate(id) {
+        for (var key in dots) {
+          if (Object.prototype.hasOwnProperty.call(dots, key)) {
+            if (key === id) {
+              dots[key].classList.add('is-active');
+            } else {
+              dots[key].classList.remove('is-active');
+            }
+          }
+        }
+      }
+
+      if (typeof window.IntersectionObserver === 'function') {
+        var io = new window.IntersectionObserver(function (entries) {
+          var best = null;
+          for (var i = 0; i < entries.length; i++) {
+            if (!entries[i].isIntersecting) { continue; }
+            if (best === null || entries[i].intersectionRatio > best.intersectionRatio) {
+              best = entries[i];
+            }
+          }
+          if (best) { activate(best.target.id); }
+        }, { threshold: [0.25, 0.5, 0.75] });
+
+        for (var j = 0; j < slides.length; j++) {
+          io.observe(slides[j]);
+        }
+      } else {
+        activate('s1');
+      }
+
+      /* Below the breakpoint the stage is no longer a fixed canvas, so drop
+         any stale scale we may have written before the viewport shrank. */
+      var mq = window.matchMedia('(max-width: ' + MOBILE_BREAKPOINT + 'px)');
+      function onBreakpoint(ev) {
+        if (ev.matches) {
+          for (var i = 0; i < slides.length; i++) {
+            var stage = slides[i].querySelector('.stage');
+            if (stage) { stage.style.removeProperty('--fit'); }
+          }
+        } else {
+          fitAll();
+        }
+      }
+      if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', onBreakpoint);
+      } else if (typeof mq.addListener === 'function') {
+        mq.addListener(onBreakpoint);
+      }
+    }());
+  </script>
+</body>
+</html>

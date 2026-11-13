@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<HTML LANG="en">
+<HEAD>
+  <META CHARSET="utf-8">
+  <META NAME="viewport" CONTENT="width=device-width, initial-scale=1">
+  <TITLE>Fixture: uppercase body tag</TITLE>
+  <STYLE>
+    body {
+      margin: 0;
+      padding: 40px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #1a222d;
+      background: #ffffff;
+    }
+    h1 { font-size: 24px; margin: 0 0 10px; }
+    p { color: #616f80; margin: 0; max-width: 620px; }
+  </STYLE>
+</HEAD>
+<!-- Trap: tag names are uppercase throughout, including the closing body
+     tag. A case-sensitive indexOf for the lowercase token finds nothing,
+     even though the document is perfectly ordinary to a parser. -->
+<BODY>
+  <H1>Uppercase body tag</H1>
+  <P>Every tag in this document is written in uppercase, which HTML treats as identical to lowercase but a naive string search does not.</P>
+</BODY>
+</HTML>

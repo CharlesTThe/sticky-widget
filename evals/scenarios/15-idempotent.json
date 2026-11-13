@@ -1,0 +1,13 @@
+{
+  "name": "15-idempotent",
+  "why": "re-running on a current file is a verifiable no-op",
+  "input": "test/fixtures/light.html",
+  "transform": "preInject",
+  "inPlace": true,
+  "expect": {
+    "exitCode": 2,
+    "bytesUnchanged": true,
+    "fencePair": 1,
+    "verifyPasses": true
+  }
+}

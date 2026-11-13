@@ -1,0 +1,12 @@
+# This skill compares bytes, so line endings are part of its contract rather than a matter of
+# taste. The evals diff generated output against a committed golden file, and verify.mjs
+# byte-matches the runtime embedded in a document against dist/widget.min.js. A clone made with
+# core.autocrlf=true — the Windows default — rewrites both to CRLF on checkout, and every one of
+# those comparisons then fails on output that is perfectly correct. Diagnosing that costs an
+# hour and ends in someone "fixing" a golden file. Pin the subtree instead.
+* text eol=lf
+
+# The exception is the fixture whose entire purpose is to BE a CRLF document: eval 11-crlf
+# asserts that CRLF line endings outside the injected block survive injection untouched.
+# Normalising it would delete the thing it tests.
+test/fixtures/edge-crlf.html -text

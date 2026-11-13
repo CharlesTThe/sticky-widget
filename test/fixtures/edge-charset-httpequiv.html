@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Trap: the encoding is declared only through http-equiv. No meta
+       element in this file carries the standalone encoding attribute, so an
+       injector that detects encoding by looking for that one attribute
+       concludes the page declares none and may insert a second, conflicting
+       declaration. -->
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixture: http-equiv charset</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #1a222d;
+      background: #ffffff;
+    }
+    h1 { font-size: 24px; margin: 0 0 10px; }
+    p { color: #616f80; margin: 0; max-width: 620px; }
+  </style>
+</head>
+<body>
+  <h1>Encoding via http-equiv</h1>
+  <p>Declared the older way. Non-ASCII content still has to survive a round trip: caf&eacute;, na&iuml;ve, 42&nbsp;&euro;.</p>
+</body>
+</html>

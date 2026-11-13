@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixture: app shell</title>
+  <style>
+    /* ------------------------------------------------------------------
+       The window itself never scrolls. All scrolling happens inside two
+       nested regions. A widget that listens for scroll on window, or that
+       positions pins against document coordinates, will see no events and
+       compute stale offsets here.
+       ------------------------------------------------------------------ */
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    :root {
+      --bg:     #f4f6f8;
+      --panel:  #ffffff;
+      --chrome: #1b2430;
+      --line:   #dfe4ea;
+      --ink:    #1d2530;
+      --muted:  #6a7787;
+      --accent: #2f6fd0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Region 1: fixed top chrome. Never scrolls, never moves. */
+    .chrome {
+      flex: 0 0 auto;
+      height: 56px;
+      background: var(--chrome);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 18px;
+      box-sizing: border-box;
+    }
+
+    .chrome .brand {
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    .chrome .spacer { flex: 1 1 auto; }
+
+    .chrome select {
+      font: inherit;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #38424f;
+      background: #232e3b;
+      color: #fff;
+    }
+
+    .chrome button {
+      font: inherit;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #38424f;
+      background: #232e3b;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .chrome button:hover { background: #2c3949; }
+
+    .shell {
+      flex: 1 1 auto;
+      display: flex;
+      min-height: 0; /* lets the children actually establish their own scroll */
+    }
+
+    /* Region 2: independently scrolling left column. */
+    .sidecol {
+      flex: 0 0 260px;
+      overflow-y: auto;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 14px 0;
+      box-sizing: border-box;
+    }
+
+    .sidecol h2 {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 10px;
+      padding: 0 16px;
+    }
+
+    .sidecol .row {
+      padding: 8px 16px;
+      border-left: 3px solid transparent;
+      cursor: default;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .sidecol .row:hover {
+      background: #f0f4f9;
+      border-left-color: var(--accent);
+    }
+
+    .sidecol .row .k { color: var(--ink); }
+    .sidecol .row .v { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Region 3: independently scrolling main canvas. */
+    .canvas {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .panel > h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .panel > .hint {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      font-variant-numeric: tabular-nums;
+    }
+
+    th {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid #c9d2dc;
+    }
+
+    tbody tr:hover { background: #f7fafd; }
+
+    .tall { min-height: 460px; }
+
+    svg.chart { display: block; width: 100%; height: 260px; }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      background: var(--accent);
+      margin-right: 6px;
+    }
+
+    .note {
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 0 12px;
+    }
+
+    /* ------------------------------------------------------------------
+       Print: the whole point of the shell is that it does not scroll, so
+       printing has to undo that or only the first screenful is ever put on
+       paper. Hidden panels are also revealed.
+       ------------------------------------------------------------------ */
+    @media print {
+      html, body { height: auto; overflow: visible; }
+      .shell { display: block; }
+      .sidecol, .canvas { overflow: visible; height: auto; flex: none; }
+      .chrome { display: none; }
+      [hidden] { display: block !important; }
+      .panel { break-inside: avoid; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="chrome">
+    <span class="brand">Northwind Logistics &mdash; Depot Console</span>
+    <span class="spacer"></span>
+    <label for="region" style="color:#aab6c4">Region</label>
+    <select id="region">
+      <option value="all">All regions</option>
+      <option value="north">North</option>
+      <option value="central">Central</option>
+      <option value="south">South</option>
+    </select>
+    <button type="button" id="toggle-detail">Toggle detail panel</button>
+  </header>
+
+  <div class="shell">
+    <aside class="sidecol" id="sidecol">
+      <h2>Depots</h2>
+      <!-- Rows are generated on load purely to guarantee real overflow in
+           this region, so inner-container scroll tracking can be tested. -->
+    </aside>
+
+    <main class="canvas" id="canvas">
+      <section class="panel">
+        <h2>Throughput by lane</h2>
+        <p class="hint">Hand-rolled SVG. Rebuilt element by element on every filter change.</p>
+        <svg class="chart" id="chart" viewBox="0 0 900 260" role="img" aria-label="Throughput by lane"></svg>
+        <div class="legend"><span><i></i>Cases per week, thousands</span></div>
+      </section>
+
+      <section class="panel tall">
+        <h2>Lane detail</h2>
+        <p class="hint">This table is destroyed and rebuilt wholesale when the region filter changes.</p>
+        <table id="lane-table">
+          <thead>
+            <tr>
+              <th>Lane</th>
+              <th>Region</th>
+              <th>Volume</th>
+              <th>Fill</th>
+              <th>On time</th>
+            </tr>
+          </thead>
+          <tbody id="lane-body"></tbody>
+        </table>
+      </section>
+
+      <!-- Second mutation idiom: this panel is never destroyed. It is only
+           hidden and re-shown via the hidden attribute, so anything anchored
+           inside it survives the toggle and must be re-shown, not re-found. -->
+      <section class="panel tall" id="detail-panel" hidden>
+        <h2>Standing assumptions</h2>
+        <p class="hint">Shown and hidden with the hidden attribute. The DOM is preserved across toggles.</p>
+        <p class="note">
+          Fill rate is measured on departure rather than on the booked plan, so a
+          trailer released early counts at whatever it actually carried.
+        </p>
+        <p class="note">
+          On-time is measured against the committed window, not the planned
+          window. A re-plan inside the day does not reset the clock.
+        </p>
+        <p class="note">
+          Volume excludes returns and inter-depot balancing moves, both of which
+          are settled on a separate ledger.
+        </p>
+        <p class="note">
+          Any lane below the 120k threshold for two consecutive periods is
+          flagged for review regardless of its on-time performance.
+        </p>
+      </section>
+
+      <section class="panel tall">
+        <h2>Exceptions log</h2>
+        <p class="hint">Static content. Present mainly to give the canvas enough height to scroll.</p>
+        <table>
+          <thead>
+            <tr><th>Ref</th><th>Raised</th><th>Lane</th><th>Status</th></tr>
+          </thead>
+          <tbody id="exception-body"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var REGIONS = ['north', 'central', 'south'];
+
+      /* ---- seed data ------------------------------------------------- */
+      var lanes = [];
+      for (var i = 1; i <= 24; i++) {
+        lanes.push({
+          id: 'LN-' + (i < 10 ? '0' + i : String(i)),
+          region: REGIONS[i % 3],
+          volume: 80 + ((i * 37) % 160),
+          fill: 44 + ((i * 13) % 48),
+          onTime: 87 + ((i * 7) % 12)
+        });
+      }
+
+      /* ---- left column: enough rows to force real overflow ----------- */
+      var sidecol = document.getElementById('sidecol');
+      for (var d = 1; d <= 64; d++) {
+        var row = document.createElement('div');
+        row.className = 'row';
+
+        var k = document.createElement('span');
+        k.className = 'k';
+        k.textContent = 'Depot ' + (d < 10 ? '0' + d : String(d));
+
+        var v = document.createElement('span');
+        v.className = 'v';
+        v.textContent = String(120 + ((d * 29) % 380));
+
+        row.appendChild(k);
+        row.appendChild(v);
+        sidecol.appendChild(row);
+      }
+
+      /* ---- exceptions log -------------------------------------------- */
+      var exBody = document.getElementById('exception-body');
+      var statuses = ['Open', 'Under review', 'Closed', 'Escalated'];
+      for (var e = 1; e <= 18; e++) {
+        var tr = document.createElement('tr');
+        var cells = [
+          'EX-' + (1400 + e),
+          'Period ' + (((e - 1) % 8) + 1),
+          lanes[e % lanes.length].id,
+          statuses[e % statuses.length]
+        ];
+        for (var c = 0; c < cells.length; c++) {
+          var td = document.createElement('td');
+          td.textContent = cells[c];
+          tr.appendChild(td);
+        }
+        exBody.appendChild(tr);
+      }
+
+      /* ---- main table ------------------------------------------------ */
+      function visibleLanes(region) {
+        if (region === 'all') { return lanes.slice(0); }
+        return lanes.filter(function (l) { return l.region === region; });
+      }
+
+      /*  DESTRUCTIVE RE-RENDER PATH
+          ---------------------------
+          This assigns innerHTML on the table body, which detaches and
+          discards every existing row node. Any reference an injected widget
+          holds to a <tr> or <td> in here is dead after this runs, and any
+          pin anchored to one has nothing left to anchor to. This is the
+          idiom the fixture exists to reproduce. */
+      function renderTable(region) {
+        var rows = visibleLanes(region);
+        var html = '';
+        for (var i = 0; i < rows.length; i++) {
+          html += '<tr>'
+                + '<td>' + rows[i].id + '</td>'
+                + '<td>' + rows[i].region + '</td>'
+                + '<td>' + rows[i].volume + 'k</td>'
+                + '<td>' + rows[i].fill + '%</td>'
+                + '<td>' + rows[i].onTime + '%</td>'
+                + '</tr>';
+        }
+        document.getElementById('lane-body').innerHTML = html;
+      }
+
+      /* ---- chart, rebuilt from scratch each time ---------------------- */
+      var SVG_NS = 'http://www.w3.org/2000/svg';
+
+      function el(name, attrs) {
+        var node = document.createElementNS(SVG_NS, name);
+        for (var key in attrs) {
+          if (Object.prototype.hasOwnProperty.call(attrs, key)) {
+            node.setAttribute(key, String(attrs[key]));
+          }
+        }
+        return node;
+      }
+
+      /* Also a full teardown: the SVG is emptied and every node recreated
+         with createElementNS, so nothing inside it survives a filter change. */
+      function renderChart(region) {
+        var svg = document.getElementById('chart');
+        while (svg.firstChild) { svg.removeChild(svg.firstChild); }
+
+        var rows = visibleLanes(region).slice(0, 10);
+        if (rows.length === 0) { return; }
+
+        var baseline = 214;
+        var maxBar = 170;
+        var max = 0;
+        for (var m = 0; m < rows.length; m++) {
+          if (rows[m].volume > max) { max = rows[m].volume; }
+        }
+        if (max === 0) { max = 1; }
+
+        svg.appendChild(el('line', {
+          x1: 40, y1: baseline + 0.5, x2: 870, y2: baseline + 0.5,
+          stroke: '#c9d2dc', 'stroke-width': 1
+        }));
+
+        var slot = 830 / rows.length;
+        var barW = Math.max(12, Math.min(52, slot * 0.6));
+
+        for (var b = 0; b < rows.length; b++) {
+          var h = Math.round((rows[b].volume / max) * maxBar);
+          var x = 40 + (slot * b) + ((slot - barW) / 2);
+
+          svg.appendChild(el('rect', {
+            x: x.toFixed(1), y: baseline - h, width: barW.toFixed(1), height: h,
+            rx: 3, fill: '#2f6fd0'
+          }));
+
+          var value = el('text', {
+            x: (x + barW / 2).toFixed(1), y: baseline - h - 7,
+            'text-anchor': 'middle', 'font-size': 11, fill: '#1d2530'
+          });
+          value.textContent = String(rows[b].volume);
+          svg.appendChild(value);
+
+          var label = el('text', {
+            x: (x + barW / 2).toFixed(1), y: baseline + 18,
+            'text-anchor': 'middle', 'font-size': 11, fill: '#6a7787'
+          });
+          label.textContent = rows[b].id;
+          svg.appendChild(label);
+        }
+      }
+
+      function render(region) {
+        renderTable(region);
+        renderChart(region);
+      }
+
+      var select = document.getElementById('region');
+      select.addEventListener('change', function () {
+        render(select.value);
+      });
+
+      /* ---- non-destructive toggle ------------------------------------ */
+      var detail = document.getElementById('detail-panel');
+      document.getElementById('toggle-detail').addEventListener('click', function () {
+        detail.hidden = !detail.hidden;
+      });
+
+      render('all');
+    }());
+  </script>
+</body>
+</html>

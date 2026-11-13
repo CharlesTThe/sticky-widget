@@ -1,0 +1,15 @@
+{
+  "name": "19-title-body",
+  "why": "a closing-body token inside the document title must not be mistaken for the injection point",
+  "input": "test/fixtures/edge-title-body.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "fenceOutsideRawText": true,
+    "sentinel": true,
+    "islandParses": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true
+  }
+}

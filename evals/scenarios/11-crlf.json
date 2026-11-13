@@ -1,0 +1,17 @@
+{
+  "name": "11-crlf",
+  "why": "CRLF line endings must survive",
+  "input": "test/fixtures/edge-crlf.html",
+  "expect": {
+    "exitCode": 0,
+    "fencePair": 1,
+    "sentinel": true,
+    "islandParses": true,
+    "islandEscaped": true,
+    "noLegacyMarkers": true,
+    "verifyPasses": true,
+    "blockShape": true,
+    "bodyCountStable": true,
+    "preservesCRLF": true
+  }
+}
